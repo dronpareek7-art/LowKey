@@ -4,6 +4,8 @@ dotenv.config();
 import router from "./routes/product.routes.js";
 import orderRouter from "./routes/order.routes.js";
 import { ConnectToDB } from "./config/connect.js";
+import ProductRouter from "./routes/product.routes.js";
+import CategoryRouter from "./routes/category.routes.js";
 
 await ConnectToDB();
 
