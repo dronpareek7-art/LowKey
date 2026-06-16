@@ -1,12 +1,5 @@
 import mongoose from "mongoose";
-
-const GenerateSlug = (name) => {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-};
+import { GenerateSlug } from "../slug.js";
 
 const ProductSchema = new mongoose.Schema(
   {
@@ -43,12 +36,6 @@ const ProductSchema = new mongoose.Schema(
     discount_price: {
       type: Number,
       default: null,
-      validate: {
-        validator: function (s) {
-          return s <= this.price;
-        },
-        message: "Discounted Price cannot exceed Original Price",
-      },
     },
     is_active: {
       type: Boolean,
@@ -66,6 +53,10 @@ ProductSchema.pre("save", function (next) {
   if (this.name) {
     this.slug = GenerateSlug(this.name);
   }
+    if (this.discount_price != null && this.discount_price > this.price) {
+    return next(new Error("Discounted Price cannot exceed Original Price"));
+  }
+
   next();
 });
 
@@ -75,6 +66,17 @@ ProductSchema.pre("insertMany", function (next, docs) {
       doc.slug = GenerateSlug(doc.name);
     }
   });
+  next();
+});
+
+ProductSchema.pre("findOneAndUpdate", function (next) {
+  const update = this.getUpdate();
+
+  if (update.discount_price != null && update.price != null) {
+    if (update.discount_price > update.price) {
+      return next(new Error("Discounted Price cannot exceed Original Price"));
+    }
+  }
   next();
 });
 
