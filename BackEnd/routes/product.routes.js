@@ -7,6 +7,7 @@ import {
   DeleteProduct,
 } from "../controller/product.controller.js";
 
+
 const ProductRouter = express.Router();
 
 ProductRouter.get("/products", GetProducts);

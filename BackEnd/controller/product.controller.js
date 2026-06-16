@@ -1,27 +1,43 @@
 import productModel from "../model/product.model.js";
+import CategoryModel  from "../model/category.model.js";
 
 export async function GetProducts(req, res) {
   try {
-    const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 10;
-    const totalproduct = await productModel.countDocuments();
+    const { category_id, category_name, page = 1, limit = 10 } = req.query;
+
+    const filter = {};
+
+    if (category_id) {
+      filter.category_id = category_id;
+    }
+
+    if (category_name) {
+      const category = await CategoryModel.findOne({
+        name: { $regex: category_name, $options: "i" },
+      });
+
+      if (!category) {
+        return res.json({
+          total: 0,
+          data: [],
+          message: "No category found with this name",
+        });
+      }
+
+      filter.category_id = category._id;
+    }
+
+    const skip = (page - 1) * limit;
+    const totalproduct = await productModel.countDocuments(filter);
     const totalPages = Math.ceil(totalproduct / limit);
 
-    if (page > totalPages) {
-      return res.status(404).json({
-        message: `Page ${page} does not exist`,
-        totalPages,
-      });
-    }
-    const skip = (page - 1) * limit;
+    const Products = await productModel.find(filter).skip(skip).limit(limit);
 
-    const Products = await productModel.find().skip(skip).limit(limit);
-
-    return res.json({
-      currentPage: page,
+    res.json({
+      currentPage: Number(page),
       totalPages,
       totalproduct,
-      Products,
+      data: Products,
     });
   } catch (error) {
     res.status(500).json({
@@ -61,6 +77,9 @@ export async function AddBulkProducts(req, res) {
     });
   }
 }
+
+
+
 
 export async function UpdateProduct(req, res) {
   try {
